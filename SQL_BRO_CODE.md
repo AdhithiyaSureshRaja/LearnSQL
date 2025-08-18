@@ -865,4 +865,139 @@ Note: A Self join is the act of joining a copy of a tale to itself , used to hel
     FROM <table_name_1> AS <alias_name_1> INNER JOIN <table_name_1> AS <alias_name_2> ON <alias_name_1>.<column_name_1> = <alias_name_2>.<column_name_2>;
 
 
+## 23.Views
+
+
+### To create a VIEW using all the columns from a specific table:
+    
+    CREATE VIEW <view_name> AS 
+    SELECT * FROM <table_name>; // whatever the result of this 2nd line of the query is will be stores as the view  
+
+Note: This creates a view which is similar to a table .It is called a virtual table. It is the result set of the above SQL statement . The field are from one or more real columns from other tables. They are no real table but can be interacted with as if they are. Useful when you want to have a copy of columns from other tables as when you edit the original columns of the real tables , these are reflected in the view.
+
+### To create a VIEW using speicific columns of the real table:
+
+    CREATE VIEW <view_name> AS
+    SELECT <column_name_1> , <column_name_2> FROM <table_name_1>;
+
+### To create a VIEW from joins:
+
+    CREATE VIEW <view_name> AS
+    SELECT <alias_name_1><column_name_1> ,<alias_name_1><column_name_2> , <alias_name_2><column_name_3> , <alias_name_2><column_name_4> 
+    FROM <table_name_1> AS <alias_name_1> INNER JOIN <table_name_2> AS <alias_name_2> ON <alias_name_1>.<column_name_1> = <alias_name_2>.<column_name_6>;
+
+Note : The INNER JOIN of the 2 tables are then saved as a VIEW.
+
+### To delete a VIEW:
+
+    DROP VIEW <view_name>;
+
+### To display a VIEW:
+
+    SELECT * FROM <view_name>;
+
+### To use ORDER BY on a VIEW:
+
+    SELECT * FROM <view_name> ORDER BY <column_name_1>;
+
+
+## 24.Indexes
+
+
+### To display the INDEXES in a table:
+
+    SHOW INDEXES FROM <table_name>;
+
+Note: Indexes are a sort of data structure similar to B-Tree(balanced tree) . They are used to find values in a specific column more quickly . MySQL normally searches sequentially through a column meaning the longer the column , the more expensive the operation is. If you apply an index to a column , UPDATING takes more time , SELECTING takes lesser time. Use it on table which won't be updated very often.
+
+### To create a INDEX for a column:
+
+    CREATE INDEX <index_name> ON <table_name>(<column_name>);
+
+Note: Now any query that searches /filters based on that <column_name> will be much faster. It is mainly noticable only in large datasets .
+
+### To create a MULTI COLUMN INDEX for mulltiple columns of a table:
+
+    CREATE INDEX <index_name> ON <table_name>( <column_name_1> , <column_name_2> , <column_name_3> );
+
+Note: Now this one index will be applied for multiple column but <column_name_1> will have sequence 1 , <column_name_2> will have sequence 2  , <column_name_3> will have sequence 3 in that index. Meaning search for the one with sequence 1 , if sequence 2 exist search for that too similar case for sequence 3. But if you were to just use the 2nd or 3rd squence ( only <column_name_2> or only <column_name_3>  ) in query to filter / display /select or search , we WILL NOT BE UTILISING THE INDEX. The previous sequence MUST be used before the next sequence is used so has to effieciently use the INDEX for faster querying 
+
+### To delete an INDEX:
+
+    ALTER TABLE <table_name> DROP INDEX <index_name>;
+
+
+## 25.Subquery 
+
+
+### To display a subquery:
+
+    SELECT * , (SELECT AVG(<column_name>) FROM <table_name>) AS <alias_name> FROM <table_name>; // displays all columns as well as the avg of <column_name_1> 
+
+Note: A subquery is a query inside a quesry. We can use anything from avg to even order by to return a list of rows , like litreally anything . I just feel unimaginative so I put avg here. Also that alias name can only be given in tandem with FROM , cant use it for SET or WHERE clause.
+
+### To use a Subquery with WHERE clause:
+
+    SELECT* FRO
+
+    SELECT * FROM <table_name> WHERE <column_name_1> > (SELECT AVG(<column_name_1>) FROM <table_name>); // returns all the columns where <column_name_1> has greater value then the average.
+
+Note: Here you cannot assign alias to the Subquery nor can you use the <alias_name> instead of the subquery.
+
+
+## 26.Group By
+
+
+### To consider values of certain column as a GROUP and use an AGGREGATE FUNCTION on them:
+
+    SELECT  <column_name_1> , <aggregate_function>(<column_name_2>)  FROM <table_name> GROUP BY <column_name_1>;
+
+Note: In the table , the rows with same <column_name_1> are group and the aggregate function is applied on the <column_name_2> of these groups that are formed.
+For GROUP BY to work we can only select functionaly dependent column on the GROUP BY . That is 1. A column that has the groups , 2. A column that uses Aggregate functions on another column. If not this error will come :
+
+` Error Code: 1055. Expression #1 of SELECT list is not in GROUP BY clause and contains nonaggregated column 'mydb.employees.employee_id' which is not functionally dependent on columns in GROUP BY clause; this is incompatible with sql_mode=only_full_group_by ` . 
+
+RECAP: AGGREGATE FUNCTION ARE -> MAX() MIN() SUM() AVG() COUNT() etc. Cannot use WHERE clause after GROUP BY , thats why we use HAVING clause. Have to Follow execution order .
+
+###    SQL Query Execution Flow
+
+| Order | Clause            | What it does                         | Example snippet                            |
+| ----: | ----------------- | ------------------------------------ | ------------------------------------------ |
+|     1 | `FROM` / `JOIN`   | Choose tables and join them          | `FROM employees e JOIN departments d ON …` |
+|     2 | `WHERE`           | Filter **rows** (no aggregates here) | `WHERE e.salary > 5000`                    |
+|     3 | `GROUP BY`        | Group remaining rows                 | `GROUP BY d.name`                          |
+|     4 | `HAVING`          | Filter **groups** (uses aggregates)  | `HAVING COUNT(*) >= 2`                     |
+|     5 | `SELECT`          | Pick columns/expressions to output   | `SELECT d.name, COUNT(*) AS emp_count`     |
+|     6 | `DISTINCT` (opt.) | Remove duplicate result rows         | `SELECT DISTINCT d.name`                   |
+|     7 | `ORDER BY`        | Sort final result set                | `ORDER BY d.name`                          |
+|     8 | `LIMIT/OFFSET`    | Return only a subset of rows         | `LIMIT 10 OFFSET 20`                       |
+
+### FULL QUERY EXAMPLE
+    SELECT department, COUNT(*) AS emp_count
+    FROM employees
+    WHERE salary > 5000
+    GROUP BY department
+    HAVING COUNT(*) >= 2
+    ORDER BY department;
+
+This query returns a list of departments that have at least two employees earning more than 5000, along with the count of such employees in each department, sorted by department name.
+
+### To use the HAVING CLAUSE in tandem with GROUP BY so that we can apply condition to groups:
+
+    SELECT <column_name_1> , <aggregate_function>( <column_name-2> ) FROM <table_name> GROUP BY <column_name_1> 
+    HAVING <column_name_3> <condition> <value>;
+
+    SELECT <column_name_1> , <aggregate_function>( <column_name-2> ) FROM <table_name> GROUP BY <column_name_1> 
+    HAVING <column_name_3> <condition_1> <value_1> AND <column_name_4> <condition_2> <value_2>;
+
+    SELECT <column_name_1> , <aggregate_function>( <column_name-2> ) FROM <table_name> GROUP BY <column_name_1> 
+    HAVING <column_name_3> <condition_1> <value_1> OR <column_name_4> <condition_2> <value_2>;
+
+Note: This will only return the rows which satisfies the HAVING CLAUSE CONDITION. Basically when you want to use a WHERE CLAUSE in a GROUP BY , use HAVING CLAUSE.
+
+
+
+
+
+
 
