@@ -126,7 +126,7 @@ Note: The other columns without the data will be NULL
 
 
 
-## 4.Select Data from Table
+## 4.Select Data from Table / Where Clause
 
 
 ### To select all data in a table:
@@ -246,7 +246,6 @@ Note: NOT NULL is used when we do not want empty data / null data in a column.
     ALTER TABLE <table_name> MODIFY <column_name> <data_type> NULL;
 
 
-
 ## 10.Check Constraint 
 
 
@@ -350,6 +349,7 @@ Note: If you drop the auto_increment on a column then once again re-apply it wit
 
 
 ## 14.Foreign Key 
+
 
 ### To apply foreign key constraint:
 
@@ -945,7 +945,7 @@ Note: A subquery is a query inside a quesry. We can use anything from avg to eve
 Note: Here you cannot assign alias to the Subquery nor can you use the <alias_name> instead of the subquery.
 
 
-## 26.Group By
+## 26.Group By Clause & Having Clause
 
 
 ### To consider values of certain column as a GROUP and use an AGGREGATE FUNCTION on them:
@@ -996,8 +996,286 @@ This query returns a list of departments that have at least two employees earnin
 Note: This will only return the rows which satisfies the HAVING CLAUSE CONDITION. Basically when you want to use a WHERE CLAUSE in a GROUP BY , use HAVING CLAUSE.
 
 
+## 27.Roll Up Clause
 
 
+### To get the GRAND TOTAL using ROLLUP CLAUSE:
 
+    SELECT  <column_name_1> , <aggregate_function>(<column_name_2>)  FROM <table_name> GROUP BY <column_name_1> WITH ROLLUP;
+
+
+Note: Its an extention of the GROUPBY CLAUSE , produces another row and shows GRAND TOTAL (SUPER AGGREGATE VALUE) of all the above rows. It can also be used together with HAVING CLAUSE
+
+### TO use the ROLLUP CLAUSE together with the HAVING CLAUSE:
+
+    SELECT <column_name_1> , <aggregate_function>( <column_name_2> ) FROM <table_name> 
+    GROUP BY <column_name_1> WITH ROLLUP 
+    HAVING <column_name_3> <condition> <value>;
+
+
+## 28.On Delete Clause
+
+
+### To delete row when FOREIGN KEY is DELETED:
+
+    CREATE TABLE <table_name_1>(
+        <column_name_1> <datatype>,
+        <column_name_2> <datatype>,
+        FOREGIN KEY( <column_name_2> ) REFRENCES <table_name_2>( <column_name_1> ) 
+        ON DELETE CASCADE; 
+
+    );
+
+    ALTER TABLE <table_name_1> ADD CONSTRAINT
+    FOREIGN KEY (<column_name_2>) REFRENCES <table_name_2>( <column_name_1> )
+    ON DELETE CASCADE;
+
+Note: The ON DELETE CLAUSE can only be applied when creating a FOREIGN either during the table creation or alter the table at a later time. When using this ON DELETE CASCADE , when the value in the parent table (<table_name_2>)  is removed. The column in the child table is connected to the column in the parent table. Suppose a value in the roww in parent table's column which was refrenced by this child table gets deleted , then the entire row which refrenced that parent column table will get deleted.
+
+### To set NULL where the FOREIGN KEY is DELETED:
+
+    CREATE TABLE <table_name_1>(
+        <column_name_1> <datatype>,
+        <column_name_2> <datatype>,
+        FOREGIN KEY( <column_name_2> ) REFRENCES <table_name_2>( <column_name_1> ) 
+        ON DELETE SET NULL; 
+
+    );
+
+    ALTER TABLE <table_name_1> ADD CONSTRAINT
+    FOREIGN KEY (<column_name_2>) REFRENCES <table_name_2>( <column_name_1> )
+    ON DELETE CASCADE;
+
+Note: When the parent column's row which was refrenced by the child column gets deleted , the column and row where the value was deleted will be replaced with a NULL.
+
+
+## 29.Stored Procedures
+
+
+### To store query as a STORED PROCEDURE:
+
+    CREATE PROCEDURE <procedure_name>()
+    BEGIN
+        SELECT * FROM <table_name>;
+    END;
+    // wrong code doesn't acount for the delimitter problem
+
+
+    DELIMITTER $$
+    CREATE PROCEDURE <procedure_name>()
+    BEGIN
+        SELECT * FROM <table_name>;
+    END $$
+    DELIMITER ;
+    //correct way 
+
+
+    DELIMITER $$
+    CREATE PROCEDURE return_ids(IN sal INT , IN dep varchar(50))
+    BEGIN
+	    SELECT * FROM employees where salary> sal and dept = dep ;
+    END $$
+    DELIMITER ;
+
+
+    DELIMITER $$
+    CREATE PROCEDURE <procedure_name>(IN <parameter_1> <datatype> , IN <parameter_2> <datatype> , OUT <parameter_3> <datatype>, INOUT <parameter_4> <datatype> ) 
+    BEGIN
+	    #QUERY HERE
+    END $$
+    DELIMITER ;
+
+
+Note: This will store the query to display all columns of the table <table_name> as a stored procedure called  <procedure_name>. The problem here is that when putting the semicolon (Delimitter) , SQL considers that as the end of the query . Therefore to successfully save the query with the proper delimiter which is the semicollon we will temporarity switch the delimiter. The third query is one that takes in input arguments and uses them to compare with the table's values and return a certain output. The fourth query is the general structure of the STORED PROCEDURE.
+
+### To CALL a STORED PROCEDURE:
+
+    CALL <procedure_name>();
+
+    CALL <procedure_name>( <parameter_1> , <paramter_2> , <parameter_3> );
+
+Note: This will perform whatever query you saved as the <procedur_name> . If you have pased a output parameter when creating then the variable will be sent through whatever process and be changed to the new output. To save into a variable we can make use of the SELECT <column_name> INTO <variable_name> FROM <table_name>.
+For Example:
+
+    DELIMITER // 
+    CREATE PROCEDURE CountEmployees(IN dept_name VARCHAR(50), OUT emp_count INT) 
+    BEGIN 
+        SELECT COUNT(*) INTO emp_count FROM employees WHERE department = dept_name; 
+    END // 
+    DELIMITER ;
+
+In this example , we save the value into emp_count. This also means that whatever is after the SELECT won't be displayed but only will be saved into the variable.
+
+### To drop a STORED PROCEDURE:
+
+    DROP PROCEDURE <procedure_name>;
+
+Note: A STORED PROCEDURE is a prepared SQL code that you can save , it is especially useful if there is a query you write often . It reduces network traffic , increases performance and it is very secure because an administrator can grant permission to a user or an application to use a stored procedure. The disadvantage is that it increases he memory usage of every connection.
+
+
+## 30.Triggers
+
+
+### To use BEFORE UPDATE TRIGGER:
+
+
+    DELIMITER $$
+    CREATE TRIGGER <trigger_name>
+    BEFORE UPDATE ON <table_name>
+    FOR EACH ROW
+    BEGIN
+        <SQL_QUERY>;    
+        SET NEW.<column_name_1> = (NEW.<column_name_2> <operation>);
+    END $$
+    DELIMITER ;
+
+
+    DELIMITER $$
+    CREATE TRIGGER <trigger_name>
+    BEFORE UPDATE ON <table_name>
+    FOR EACH ROW
+    BEGIN
+        IF NEW.<column_name> <condition> <value> THEN
+        <SQL_QUERY>;    
+        SET NEW.<column_name_1> = (NEW.<column_name_2> <operation>);
+    END $$
+    DELIMITER ;
+
+
+Note: When an event happens the trigger is set to do something. It can be used when Inserting , Updating and Deleting Data where the trigger will check data , handle errors and audit tables. Here since we are passing a new value to the exisitng column , the trigger gets the new value through the use of the NEW keyword , then it updates the other columns that are changed via the trigger then the update operation happens. Basically in the BEFORE UPDATE TRIGGER , you can react to the new data before it’s stored and even change it.
+
+### To use AFTER UPDATE TRIGGER:
+
+    DELIMITER $$
+    CREATE TRIGGER <trigger_name>
+    AFTER UPDATE ON <table_name>
+    FOR EACH ROW
+    BEGIN
+        <SQL_QUERY>;
+    END $$
+    DELIMITER ;
+
+Note: While BEFORE is used to validate and modify data before saving while AFTER is mostly focused on saving LOG changes , update related table or trigger external action.
+
+### To use BEFORE INSERT TRIGGER:
+
+    DELIMITER //
+    CREATE TRIGGER <trigger_name>
+    BEFORE INSERT ON <table_name>
+    FOR EACH ROW 
+    BEGIN
+        <SQL_QUERY>;
+    END // 
+    DELIMITER ;
+
+Note: Executes before new row is inserted into the table . The usecase for this is to set default value for certain columns , validate or modify data before inserting or even prevent insertion based on some condition. You can prevent insertion by puting `SIGNAL SQLSTATE '45000' ` which will throw error message when you insert if you dont want some insertion. Put error message using ` SET MESSAGE_TEXT = "<error_message>"; `
+
+For refrence these are the ERROR CODES / SQLSTATES:
+| Code    | Meaning                                                      |
+| ------- | ------------------------------------------------------------ |
+| `02000` | No data                                                      |
+| `23000` | Integrity constraint violation (e.g., primary key duplicate) |
+| `45000` | Unhandled user-defined exception (general error for SIGNAL)  |
+| `01000` | Warning                                                      |
+| `42000` | Syntax error or access rule violation                        |
+
+### To use AFTER INSERT TRIGGER:
+
+    DELIMITER //
+    CREATE TRIGGER <trigger_name>
+    AFTER INSERT ON <table_name>
+    FOR EACH ROW 
+    BEGIN
+        <SQL_QUERY>;
+    END // 
+    DELIMITER ;
+
+Note: Use for logging the entry in some way , we want the data to 100% exist in the database before logging it in another table , therefore we want to only update the log table if the insert is successful .
+
+### To use BEFORE DELETE TRIGGER:
+
+    DELIMITER //
+    CREATE TRIGGER <trigger_name>
+    BEFORE DELETE ON <table_name>
+    FOR EACH ROW 
+    BEGIN
+        <SQL_QUERY>;
+    END // 
+    DELIMITER ;
+
+Note: It is mainly used to prevent delete of block of data , prevent deletion if certain condition aren't met , prevent deletion if it violates the database logic. For example, Deleting a customer with a pending order and logging deletion attempts. You can get access to who is trying to delete that data or in AFTER DELETE TRIGGER , already deleted that data 
+using `SESSION_USER()` .
+
+### To use AFTER DELETE TRIGGER:
+
+    DELIMITER //
+    CREATE TRIGGER <trigger_name>
+    AFTER DELETE ON <table_name>
+    FOR EACH ROW 
+    BEGIN
+        <SQL_QUERY>;
+    END // 
+    DELIMITER ;
+
+Note: To archive deleted data in another table. To check who deleted what using `SESSION_USER()` . If foreign key doesn't remove something in child table after deletion in parent table , we can delete that remaining data off . Update overall / aggregate data / totals after deletion.
+
+### To show all triggers for all table in DB:
+
+    SHOW TRIGGERS;
+
+
+## 31.Common Table Expression
+
+
+### To use the WITH keyword to create a CTE:
+
+    WITH <cte_name> AS (
+        
+        <SQL_QUERY> // similar to subquery , typical select statement , for example
+
+        SELECT <column_name_1> , <column_name_2> FROM <table_name_1> WHERE <condition_1>
+
+
+    )
+    SELECT * FROM <cte_name> WHERE <condition_2> ;
+
+Note: Common table expression is a temporary , named result set in SQL that you define with a WITH CLAUSE and refrence it within the MAIN QUERY. It is like a temporary VIEW for the duration of the QUERY without being permenantly being stored in our database.
+| Feature         | CTE (WITH)                                      | Subquery                          | View                                   |
+| --------------- | ----------------------------------------------- | --------------------------------- | -------------------------------------- |
+| **Definition**  | Temporary named result set in a query           | Query nested inside another query | Permanent saved query in DB            |
+| **Lifetime**    | Only for that query                             | Only inside the outer query       | Persistent in DB until dropped         |
+| **Readability** | High (especially for complex queries)           | Low (can become hard to read)     | High (abstracts logic)                 |
+| **Performance** | Similar to subquery (optimizer decides)         | Similar                           | May have overhead, depends on DB       |
+| **Usage**       | Complex queries, recursion, multiple references | One-off filtering or calculation  | Reusable logic across multiple queries |
+
+### To use RECURSIVE CTE:
+
+    WITH RECURSIVE <cte_name> AS (
+    
+        //-- Anchor member (starting point)
+        SELECT <column_list>
+        FROM <table_name>
+        WHERE <base_condition>
+        
+        UNION ALL
+        
+        // Recursive member (repeats using previous CTE results)
+        SELECT <column_list>
+        FROM <table_name> AS t
+        INNER JOIN <cte_name> AS c
+        ON <join_condition>
+    )
+    SELECT *
+    FROM <cte_name>
+    WHERE <final_condition>;
+
+Note: This is a RECURSIVE CTE using the keyword recursive. The 1st block in the CTE represents the starting query , anchor point , the union all is used to not delete dupilicate value and finally the last block is used to fetch the next level of data. Output of the anchor is passeed to the recursive member then the output of that member is continiusly passes as input to the recursive memeber until it produces no new rows.
+
+
+## 32.User and Account Management
+
+### To create a USER:
+
+    
 
 
